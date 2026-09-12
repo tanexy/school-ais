@@ -1,6 +1,6 @@
 const db = require('./db');
 const migrate = require('./migrate');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 migrate();
 db.pragma('foreign_keys = OFF');
 

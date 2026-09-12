@@ -31,7 +31,7 @@ echo   If you see red error text below, copy it and
 echo   send it to whoever set up the system.
 echo ================================================
 echo.
-node server.js
+node --no-warnings server.js
 echo.
 echo   The backend has stopped. You can close this window.
 pause

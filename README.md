@@ -12,7 +12,7 @@ It has built-in **demo data** so you can explore everything straight away.
 - **Internet** (needed only the first time, to download a few programs).
 - Any modern web browser: **Chrome, Edge or Firefox**.
 
-You do **not** need to install anything else by hand. The one-click script below downloads Node.js for you.
+You do **not** need to install anything else by hand. The one-click script below downloads Node.js for you. No Python, no Visual Studio, no "build tools" are ever needed - the database engine is built into Node.js.
 
 ---
 
@@ -29,7 +29,7 @@ The script will:
 - Download a portable copy of Node.js (about 30 MB, one time only),
 - Install the program's packages (one time only),
 - Create the database with sample data (one time only),
-- Check the database driver installed correctly,
+- Check the database is working,
 - Start the system, wait until it is really running, and then open it in your browser.
 
 > If Windows shows a **"Windows protected your PC"** warning for the script, click **"More info"** then **"Run anyway"** - it is our own file, not a virus.
@@ -62,12 +62,12 @@ Use this if you prefer Terminal, or if you are on a Mac/Linux computer.
 
 ### 1. Install Node.js
 
-Download the **LTS** version (20 or newer) from **[https://nodejs.org](https://nodejs.org)** and install it with the default options.
+Download the **LTS** version (22.13 or newer, preferably the latest 24 LTS) from **[https://nodejs.org](https://nodejs.org)** and install it with the default options. The database engine is built into Node.js, so an older version than 22.13 will not work.
 Verify it works by opening a terminal and running:
 ```bash
 node --version
 ```
-It should print a version number like `v20.x.x`.
+It should print a version number like `v24.x.x`.
 
 ### 2. Open a terminal in the project folder
 
@@ -120,6 +120,7 @@ Wait until the second window shows something like `Local: http://localhost:5173/
 |---------|------------|
 | `node is not recognized` / `node: command not found` | Node.js was not installed properly. Run the installer again from nodejs.org and restart the terminal. |
 | `npm install` shows errors | Check your internet connection and try again. |
+| `npm install` says it needs **Visual Studio** or **Python** | This only happens with very old copies of the system. The database engine is now built into Node.js, so nothing needs to be compiled. Delete the whole folder, download the ZIP again, and extract it fresh. |
 | "Port 3001 or 5173 already in use" | A copy of the system is probably already running. Close its windows, or restart your computer. |
 | The page is blank or won't load | Both tiny console windows titled **"Acacia -"** must stay open. If one of them shows red error text, screenshot it and send it to whoever set up the system. |
 | `start-school.bat` does nothing | Right-click it -> "Run as administrator", then "More info -> Run anyway" if Windows blocks it. |
@@ -133,7 +134,7 @@ To start again later, just double-click **`start-school.bat`** again, or repeat 
 
 ## For developers
 
-- **Backend:** Node.js + Express (port 3001), SQLite database (`backend/school.db`), JWT auth.
+- **Backend:** Node.js + Express (port 3001), SQLite via Node's built-in `node:sqlite` (no native modules), JWT auth.
   - `npm start` - run the API server
   - `npm run seed` - reset the database with fresh demo data
 - **Frontend:** React + TypeScript + Vite (port 5173), TanStack Query.

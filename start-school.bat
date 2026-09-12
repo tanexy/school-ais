@@ -55,7 +55,7 @@ echo.
 rem ---------- Step 3. Backend packages ----------
 if not exist "%~dp0backend\node_modules" goto installbackend
 echo [3/5] Backend packages already installed - skipping.
-"%NODE%" -e "require('better-sqlite3')" >nul 2>nul
+"%NODE%" -e "require('node:sqlite')" >nul 2>nul
 if errorlevel 1 goto bindfail
 goto backenddone
 
@@ -65,7 +65,7 @@ echo === backend npm install @ %DATE% %TIME% >> "%~dp0install.log"
 cd /d "%~dp0backend"
 call "%PROJECT%\tools\node\npm.cmd" install >> "%~dp0install.log" 2>&1
 if errorlevel 1 goto backendfail
-"%NODE%" -e "require('better-sqlite3')" >> "%~dp0install.log" 2>&1
+"%NODE%" -e "require('node:sqlite')" >> "%~dp0install.log" 2>&1
 if errorlevel 1 goto bindfail
 cd /d "%~dp0"
 echo Backend packages OK.
@@ -100,8 +100,8 @@ rem ---------- Step 6. Database and demo data ----------
 if exist "%~dp0backend\school.db" goto dbdone
 echo [5/5] Creating the database with sample data - first run only...
 cd /d "%~dp0backend"
-"%NODE%" migrate.js >> "%~dp0install.log" 2>&1
-"%NODE%" seed.js >> "%~dp0install.log" 2>&1
+"%NODE%" --no-warnings migrate.js >> "%~dp0install.log" 2>&1
+"%NODE%" --no-warnings seed.js >> "%~dp0install.log" 2>&1
 cd /d "%~dp0"
 if not exist "%~dp0backend\school.db" goto dbfail
 echo Database ready.
@@ -198,10 +198,10 @@ goto failquit
 
 :bindfail
 echo.
-echo    The database driver could not be loaded.
-echo    This is usually the internet connection or antivirus
-echo    blocking the download. Run this file again once you
-echo    are online.
+echo    The built-in database driver could not be loaded.
+echo    This needs the bundled Node.js supplied in the tools
+echo    folder. Delete the "tools" folder, run this file again,
+echo    and wait for it to finish before touching anything.
 goto failquit
 
 :frontendfail
