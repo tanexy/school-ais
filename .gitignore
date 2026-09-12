@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Build output
+frontend/dist/
+
+# Database (recreated by seed.js)
+backend/school.db
+backend/school.db-shm
+backend/school.db-wal
+
+# Environment / secrets (never commit)
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+logs/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Local toolchain (portable Node downloaded by start-school.bat)
+tools/
