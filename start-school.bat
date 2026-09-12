@@ -127,44 +127,21 @@ start "Acacia - Backend (keep open)" /min cmd /k "%~dp0run-server.bat backend"
 start "Acacia - Frontend (keep open)" /min cmd /k "%~dp0run-server.bat frontend"
 
 rem ---------- Step 8. Wait for the servers, then open the browser ----------
-set TRIES=0
 echo Checking that the system is ready...
 
-:waitbackend
-set "BACK=000"
-for /f "delims=" %%c in ('curl -s -o nul -w "%%{http_code}" http://localhost:3001/api/health 2^>nul') do set "BACK=%%c"
-if "!BACK!"=="200" goto backendup
-set /a TRIES+=1
-if !TRIES! GEQ 20 goto backendtimeout
-timeout /t 2 /nobreak >nul
-goto waitbackend
+echo Checking the backend...
+"%NODE%" "%~dp0healthcheck.js" http://localhost:3001/api/health 40 2 >> "%~dp0install.log" 2>&1
+if errorlevel 1 goto backendtimeout
+echo Backend is up.
 
-:backendtimeout
+:checkfrontend
+echo Checking the frontend page...
+"%NODE%" "%~dp0healthcheck.js" http://localhost:5173/ 40 2 >> "%~dp0install.log" 2>&1
+if errorlevel 1 goto frontendtimeout
+
+:openbrowser
 echo.
-echo    The backend did not respond after 40 seconds.
-echo    Open the "Acacia - Backend (keep open)" window and look at
-echo    the red error text - that is the reason it did not start.
-
-:backendup
-set TRIES=0
-
-:waitfrontend
-set "FRONT=000"
-for /f "delims=" %%c in ('curl -s -o nul -w "%%{http_code}" http://localhost:5173/ 2^>nul') do set "FRONT=%%c"
-if "!FRONT!"=="200" goto frontendup
-set /a TRIES+=1
-if !TRIES! GEQ 20 goto frontendtimeout
-timeout /t 2 /nobreak >nul
-goto waitfrontend
-
-:frontendtimeout
-echo.
-echo    The frontend page did not respond after 40 seconds.
-echo    Open the "Acacia - Frontend (keep open)" window and look at
-echo    the error text.
-
-:frontendup
-echo.
+echo    Everything is running - opening the app...
 start "" "http://localhost:5173"
 echo    Done! The app is now open in your browser.
 echo.
@@ -173,6 +150,37 @@ echo        http://localhost:5173
 echo.
 echo    To STOP the system, close the two console windows whose
 echo    titles start with Acacia.
+echo.
+pause
+exit /b 0
+
+rem ---------- Timeout messages ----------
+:backendtimeout
+echo.
+echo    The backend did not respond after 40 seconds.
+echo    A copy of the system may already be running, or the
+echo    backend failed to start.
+echo    Open the "Acacia - Backend (keep open)" window.
+echo    - If it shows the address http://localhost:3001 with no
+echo      errors, the system is fine - open http://localhost:5173
+echo      in your browser.
+echo    - If it shows an error, screenshot it and send it to
+echo      whoever gave you this program.
+echo.
+echo The last lines of the progress log are:
+if exist "%~dp0install.log" powershell -NoProfile -Command "Get-Content -Path '%~dp0install.log' -Tail 6"
+echo.
+echo Continuing to check the frontend...
+goto checkfrontend
+
+:frontendtimeout
+echo.
+echo    The frontend page did not respond after 40 seconds.
+echo    Open the "Acacia - Frontend (keep open)" window and look at
+echo    the error text.
+echo.
+echo    The backend may still be running - try opening
+echo    http://localhost:5173 in your browser manually.
 echo.
 pause
 exit /b 0

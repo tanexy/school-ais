@@ -33,6 +33,7 @@ echo ================================================
 echo.
 node --no-warnings server.js
 echo.
+if errorlevel 1 echo   The backend exited with an error (code %errorlevel%).
 echo   The backend has stopped. You can close this window.
 pause
 exit /b 0
