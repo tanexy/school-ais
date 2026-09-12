@@ -29,9 +29,12 @@ The script will:
 - Download a portable copy of Node.js (about 30 MB, one time only),
 - Install the program's packages (one time only),
 - Create the database with sample data (one time only),
-- Start the system and open it in your browser.
+- Check the database driver installed correctly,
+- Start the system, wait until it is really running, and then open it in your browser.
 
 > If Windows shows a **"Windows protected your PC"** warning for the script, click **"More info"** then **"Run anyway"** - it is our own file, not a virus.
+>
+> If Windows asks you to **allow the app through the firewall**, tick "Private networks" and press **Allow** - this is normal.
 
 **Your browser will open the app automatically.** If it does not, type this in the address bar:
 ```
@@ -118,8 +121,11 @@ Wait until the second window shows something like `Local: http://localhost:5173/
 | `node is not recognized` / `node: command not found` | Node.js was not installed properly. Run the installer again from nodejs.org and restart the terminal. |
 | `npm install` shows errors | Check your internet connection and try again. |
 | "Port 3001 or 5173 already in use" | A copy of the system is probably already running. Close its windows, or restart your computer. |
-| The page is blank or won't load | Both terminal windows must stay open. Confirm the backend window shows no red errors. |
+| The page is blank or won't load | Both tiny console windows titled **"Acacia -"** must stay open. If one of them shows red error text, screenshot it and send it to whoever set up the system. |
 | `start-school.bat` does nothing | Right-click it -> "Run as administrator", then "More info -> Run anyway" if Windows blocks it. |
+| The system used to work but now won't start | Delete the `tools` folder and the `install.log` file, then run `start-school.bat` again. |
+
+> The two small windows are started by a helper file called `run-server.bat` that sits next to `start-school.bat`. Keep both files in the same folder.
 
 To start again later, just double-click **`start-school.bat`** again, or repeat Level 2 - step 5.
 
