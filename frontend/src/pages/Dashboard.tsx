@@ -2,12 +2,12 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from '../api'
 import type { DashboardData } from '../types'
 import { PageHeader, Spinner, StatCard, ErrorBanner, Chip, Empty } from '../components/ui'
-import { money, fmtDate } from '../lib'
+import { money } from '../lib'
 import { Link } from 'react-router-dom'
 
 export function Dashboard() {
   const dash = useQuery({ queryKey: ['dashboard'], queryFn: () => api<DashboardData>('/api/reports/dashboard') })
-  const collections = useQuery({ queryKey: ['collections'], queryFn: () => api<{ daily: any[] }>('/api/reports/collections') })
+  const collections = useQuery({ queryKey: ['collections'], queryFn: () => api<{ daily: any[]; monthly: any[] }>('/api/reports/collections') })
   const expenses = useQuery({ queryKey: ['expenses-cat'], queryFn: () => api<any[]>('/api/reports/expenses-by-category') })
   const byClass = useQuery({ queryKey: ['by-class'], queryFn: () => api<any[]>('/api/reports/students-by-class') })
   const debtors = useQuery({ queryKey: ['debtors'], queryFn: () => api<any[]>('/api/reports/outstanding-fees') })
@@ -16,7 +16,7 @@ export function Dashboard() {
   if (dash.isError) return <ErrorBanner message={(dash.error as Error).message} />
   const d = dash.data!
 
-  const maxDaily = Math.max(...(collections.data?.daily.map((x) => x.total) ?? [0]), 1)
+  const maxDaily = Math.max(...(collections.data?.monthly.map((x) => x.total) ?? [0]), 1)
   const maxExp = Math.max(...(expenses.data?.map((x) => x.total) ?? [0]), 1)
   const maxClass = Math.max(...(byClass.data?.map((x) => x.count) ?? [0]), 1)
 
@@ -35,17 +35,20 @@ export function Dashboard() {
         <div className="card">
           <h2 className="section">Cash collections (recent)</h2>
           {collections.isError ? <ErrorBanner message={(collections.error as Error).message} /> :
-            collections.data?.daily.length ? (
+            collections.data?.monthly.length ? (
               <>
-                <div className="mini-bars" title="Daily receipts">
-                  {collections.data.daily.map((day) => (
-                    <div key={day.date} style={{ flexGrow: 1 }} title={`${day.date}: ${money(day.total)}`}>
-                      <div className="mini-bar" style={{ height: `${(day.total / maxDaily) * 100}%` }} />
-                      <div className="bar-label">{fmtDate(day.date).split(' ')[1]}</div>
-                    </div>
-                  ))}
+                <div className="mini-bars" title="Monthly receipts">
+                  {collections.data.monthly.map((m) => {
+                    const label = new Date(m.month + '-01T00:00:00').toLocaleDateString('en-GB', { month: 'short', year: '2-digit' })
+                    return (
+                      <div key={m.month} style={{ flexGrow: 1 }} title={`${m.month}: ${money(m.total)}`}>
+                        <div className="mini-bar" style={{ height: `${(m.total / maxDaily) * 100}%` }} />
+                        <div className="bar-label">{label}</div>
+                      </div>
+                    )
+                  })}
                 </div>
-                <div className="muted small mt">Total collected: <b>{money(collections.data.daily.reduce((s, x) => s + x.total, 0))}</b></div>
+                <div className="muted small mt">Total collected: <b>{money(collections.data.monthly.reduce((s, x) => s + x.total, 0))}</b></div>
               </>
             ) : <Empty />}
         </div>
@@ -74,16 +77,19 @@ export function Dashboard() {
         <div className="card">
           <h2 className="section">Students per class</h2>
           <div className="flex wrap">
-            {byClass.data?.map((c) => (
-              <div key={c.class_name} style={{ minWidth: 120 }}>
+            {byClass.data?.map((c) => {
+              const label = c.stream ? `${c.class_name} ${c.stream}` : c.class_name
+              return (
+              <div key={label} style={{ minWidth: 120 }}>
                 <div className="flex" style={{ justifyContent: 'space-between', marginBottom: 4 }}>
-                  <span className="small">{c.class_name}</span><span className="small muted">{c.count}</span>
+                  <span className="small">{label}</span><span className="small muted">{c.count}</span>
                 </div>
                 <div style={{ background: 'var(--bg-soft)', borderRadius: 4, overflow: 'hidden' }}>
                   <div style={{ width: `${(c.count / maxClass) * 100}%`, height: 8, background: 'linear-gradient(90deg,var(--green),var(--cyan))' }} />
                 </div>
               </div>
-            ))}
+              )
+            })}
           </div>
         </div>
 
