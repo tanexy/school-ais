@@ -25,12 +25,12 @@ insUser.run('Dr. Mwangi', 'headmaster@school.com', bcrypt.hashSync('headmaster12
 console.log('  ✓ 4 users');
 
 // ── Classes ────────────────────────────────────
-const insClass = db.prepare('INSERT INTO classes (name, stream, capacity, year_level) VALUES (?, ?, ?, ?)');
+const insClass = db.prepare('INSERT INTO classes (name, stream, capacity, year_level, school_fees, development_levy) VALUES (?, ?, ?, ?, ?, ?)');
 const classes = [
-  ['Form 1', 'A', 40, 1], ['Form 1', 'B', 40, 1],
-  ['Form 2', 'A', 38, 2], ['Form 2', 'B', 38, 2],
-  ['Form 3', 'A', 35, 3], ['Form 3', 'B', 35, 3],
-  ['Form 4', 'A', 32, 4], ['Form 4', 'B', 32, 4],
+  ['Form 1', 'A', 40, 1, 350, 100], ['Form 1', 'B', 40, 1, 350, 100],
+  ['Form 2', 'A', 38, 2, 380, 100], ['Form 2', 'B', 38, 2, 380, 100],
+  ['Form 3', 'A', 35, 3, 420, 120], ['Form 3', 'B', 35, 3, 420, 120],
+  ['Form 4', 'A', 32, 4, 450, 120], ['Form 4', 'B', 32, 4, 450, 120],
 ];
 classes.forEach(c => insClass.run(...c));
 console.log('  ✓ 8 classes');

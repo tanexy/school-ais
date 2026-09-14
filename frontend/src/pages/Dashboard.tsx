@@ -77,19 +77,16 @@ export function Dashboard() {
         <div className="card">
           <h2 className="section">Students per class</h2>
           <div className="flex wrap">
-            {byClass.data?.map((c) => {
-              const label = c.stream ? `${c.class_name} ${c.stream}` : c.class_name
-              return (
-              <div key={label} style={{ minWidth: 120 }}>
+            {byClass.data?.map((c) => (
+              <div key={c.class_id} style={{ minWidth: 120 }}>
                 <div className="flex" style={{ justifyContent: 'space-between', marginBottom: 4 }}>
-                  <span className="small">{label}</span><span className="small muted">{c.count}</span>
+                  <span className="small">{c.class_name}</span><span className="small muted">{c.count}</span>
                 </div>
                 <div style={{ background: 'var(--bg-soft)', borderRadius: 4, overflow: 'hidden' }}>
                   <div style={{ width: `${(c.count / maxClass) * 100}%`, height: 8, background: 'linear-gradient(90deg,var(--green),var(--cyan))' }} />
                 </div>
               </div>
-              )
-            })}
+            ))}
           </div>
         </div>
 

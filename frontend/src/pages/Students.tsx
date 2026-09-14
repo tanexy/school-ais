@@ -62,7 +62,7 @@ export function Students() {
                   <Link to={`/students/${s.id}`} style={{ fontWeight: 600 }}>{fullName(s)}</Link>
                   <div className="muted small">{s.gender}</div>
                 </td>
-                <td>{s.class_name}</td>
+                <td>{s.class_name && <Chip tone="blue">{s.class_name}</Chip>}</td>
                 <td>
                   {s.guardian_name}
                   <div className="muted small">{s.guardian_contact}</div>
@@ -131,7 +131,7 @@ export function StudentModal({
         <div className="field"><label>Date of birth</label><input className="input" type="date" value={f.date_of_birth} onChange={(e) => set('date_of_birth', e.target.value)} /></div>
         <div className="field"><label>Class</label>
           <select value={f.class_id} onChange={(e) => set('class_id', Number(e.target.value))}>
-            {classes.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            {classes.map((c) => <option key={c.id} value={c.id}>{c.stream ? `${c.name} ${c.stream}` : c.name}</option>)}
           </select>
         </div>
       </div>

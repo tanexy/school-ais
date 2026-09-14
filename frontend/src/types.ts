@@ -25,10 +25,12 @@ export interface Student {
 export interface ClassInfo {
   id: number
   name: string
+  stream?: string
   fees_per_term?: number
   school_fees?: number
   development_levy?: number
   capacity?: number
+  year_level?: number
   students?: number
 }
 

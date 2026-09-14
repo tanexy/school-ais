@@ -105,10 +105,20 @@ app.get('/api/classes', authRequired, rolesAllowed('admin', 'bursar', 'teacher',
   res.json(db.prepare('SELECT c.*, (SELECT COUNT(*) FROM students s WHERE s.class_id = c.id) AS student_count FROM classes c ORDER BY year_level, name').all());
 });
 app.post('/api/classes', authRequired, rolesAllowed('admin'), (req, res) => {
-  const { name, stream, capacity, year_level } = req.body;
-  const r = db.prepare('INSERT INTO classes (name, stream, capacity, year_level) VALUES (?, ?, ?, ?)')
-    .run(name, stream, capacity, year_level);
+  const { name, stream, capacity, year_level, school_fees, development_levy } = req.body;
+  const r = db.prepare('INSERT INTO classes (name, stream, capacity, year_level, school_fees, development_levy) VALUES (?, ?, ?, ?, ?, ?)')
+    .run(name, stream, capacity, year_level, school_fees || 0, development_levy || 0);
   res.status(201).json({ id: r.lastInsertRowid, message: 'Class created' });
+});
+
+app.put('/api/classes/:id', authRequired, rolesAllowed('admin'), (req, res) => {
+  const { name, stream, capacity, year_level, school_fees, development_levy } = req.body;
+  const r = db.prepare(`
+    UPDATE classes SET name=?, stream=?, capacity=?, year_level=?, school_fees=?, development_levy=?
+    WHERE id=?
+  `).run(name, stream ?? '', capacity || 0, year_level, school_fees || 0, development_levy || 0, req.params.id);
+  if (r.changes === 0) return res.status(404).json({ message: 'Class not found' });
+  res.json({ message: 'Class updated' });
 });
 
 // ── Students ──────────────────────────────────
@@ -117,7 +127,7 @@ app.get('/api/students', authRequired, rolesAllowed('admin', 'bursar', 'teacher'
   let rows;
   if (q) {
     rows = db.prepare(`
-      SELECT s.*, c.name AS class_name,
+      SELECT s.*, TRIM(c.name || ' ' || COALESCE(c.stream,'')) AS class_name,
         (SELECT COALESCE(SUM(f.amount),0) FROM fees f WHERE f.student_id = s.id) AS fees_charged,
         (SELECT COALESCE(SUM(p.amount),0) FROM payments p WHERE p.student_id = s.id) AS amount_paid,
         (SELECT COALESCE(SUM(f.amount),0) FROM fees f WHERE f.student_id = s.id)
@@ -128,7 +138,7 @@ app.get('/api/students', authRequired, rolesAllowed('admin', 'bursar', 'teacher'
     `).all(`%${q}%`, `%${q}%`, `%${q}%`);
   } else {
     rows = db.prepare(`
-      SELECT s.*, c.name AS class_name,
+      SELECT s.*, TRIM(c.name || ' ' || COALESCE(c.stream,'')) AS class_name,
         (SELECT COALESCE(SUM(f.amount),0) FROM fees f WHERE f.student_id = s.id) AS fees_charged,
         (SELECT COALESCE(SUM(p.amount),0) FROM payments p WHERE p.student_id = s.id) AS amount_paid,
         (SELECT COALESCE(SUM(f.amount),0) FROM fees f WHERE f.student_id = s.id)
@@ -141,7 +151,7 @@ app.get('/api/students', authRequired, rolesAllowed('admin', 'bursar', 'teacher'
 });
 
 app.get('/api/students/:id', authRequired, rolesAllowed('admin', 'bursar', 'teacher', 'headmaster'), (req, res) => {
-  const s = db.prepare('SELECT s.*, c.name AS class_name FROM students s LEFT JOIN classes c ON s.class_id = c.id WHERE s.id = ?').get(req.params.id);
+  const s = db.prepare(`SELECT s.*, TRIM(c.name || ' ' || COALESCE(c.stream,'')) AS class_name FROM students s LEFT JOIN classes c ON s.class_id = c.id WHERE s.id = ?`).get(req.params.id);
   if (!s) return res.status(404).json({ message: 'Student not found' });
   s.fees = db.prepare(`
     SELECT f.term, COUNT(f.id) AS fee_items, SUM(f.amount) AS amount,
@@ -201,7 +211,7 @@ app.get('/api/fees', authRequired, rolesAllowed('admin', 'bursar', 'headmaster')
   if (term) { where += ' AND f.term = ?'; params.push(term); }
   const rows = db.prepare(`
     SELECT f.student_id, s.student_id AS student_code, s.first_name || ' ' || s.last_name AS student_name,
-           c.name AS class_name, f.term,
+           TRIM(c.name || ' ' || COALESCE(c.stream,'')) AS class_name, f.term,
            COUNT(f.id) AS fee_items,
            SUM(f.amount) AS amount,
            COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.student_id = f.student_id AND p.term = f.term),0) AS paid,
@@ -611,7 +621,7 @@ app.get('/api/reports/dashboard', authRequired, rolesAllowed('admin', 'bursar', 
 // Students by class
 app.get('/api/reports/students-by-class', authRequired, rolesAllowed('admin', 'bursar', 'teacher', 'headmaster'), (req, res) => {
   const rows = db.prepare(`
-    SELECT c.id AS class_id, c.name AS class_name, c.stream,
+    SELECT c.id AS class_id, TRIM(c.name || ' ' || COALESCE(c.stream,'')) AS class_name, c.stream,
            COUNT(s.id) AS count,
            COALESCE((SELECT SUM(amount) FROM fees f WHERE f.student_id IN (SELECT id FROM students WHERE class_id = c.id)),0) AS fees_charged,
            COALESCE((SELECT SUM(amount) FROM payments p WHERE p.student_id IN (SELECT id FROM students WHERE class_id = c.id)),0) AS fees_paid
@@ -625,7 +635,7 @@ app.get('/api/reports/students-by-class', authRequired, rolesAllowed('admin', 'b
 app.get('/api/reports/outstanding-fees', authRequired, rolesAllowed('admin', 'bursar', 'headmaster'), (req, res) => {
   const rows = db.prepare(`
     SELECT s.id AS student_id, s.student_id AS code, s.first_name || ' ' || s.last_name AS student_name,
-           c.name AS class_name,
+           TRIM(c.name || ' ' || COALESCE(c.stream,'')) AS class_name,
            (SELECT COALESCE(SUM(amount),0) FROM fees WHERE student_id = s.id) AS fees_charged,
            (SELECT COALESCE(SUM(amount),0) FROM payments WHERE student_id = s.id) AS amount_paid,
            (SELECT COALESCE(SUM(amount),0) FROM fees WHERE student_id = s.id)
@@ -642,7 +652,7 @@ app.get('/api/reports/outstanding-fees', authRequired, rolesAllowed('admin', 'bu
 app.get('/api/reports/paid-up-students', authRequired, rolesAllowed('admin', 'bursar', 'headmaster'), (req, res) => {
   const rows = db.prepare(`
     SELECT s.id AS student_id, s.student_id AS code, s.first_name || ' ' || s.last_name AS student_name,
-           c.name AS class_name,
+           TRIM(c.name || ' ' || COALESCE(c.stream,'')) AS class_name,
            (SELECT COALESCE(SUM(amount),0) FROM fees WHERE student_id = s.id) AS fees_charged,
            (SELECT COALESCE(SUM(amount),0) FROM payments WHERE student_id = s.id) AS amount_paid
     FROM students s LEFT JOIN classes c ON s.class_id = c.id

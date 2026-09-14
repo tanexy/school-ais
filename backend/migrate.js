@@ -16,7 +16,9 @@ function migrate() {
       name TEXT NOT NULL,
       stream TEXT,
       capacity INTEGER,
-      year_level INTEGER
+      year_level INTEGER,
+      school_fees REAL DEFAULT 0,
+      development_levy REAL DEFAULT 0
     );
 
     CREATE TABLE IF NOT EXISTS students (
@@ -183,6 +185,14 @@ function migrate() {
   const cats = ['utilities', 'salaries', 'stationery', 'repairs', 'transport', 'security', 'cleaning', 'teaching_materials'];
   const insCat = db.prepare('INSERT OR IGNORE INTO expense_categories (category) VALUES (?)');
   cats.forEach(c => insCat.run(c));
+
+  const classCols = db.prepare('PRAGMA table_info(classes)').all().map(c => c.name);
+  if (!classCols.includes('school_fees')) db.exec('ALTER TABLE classes ADD COLUMN school_fees REAL DEFAULT 0');
+  if (!classCols.includes('development_levy')) db.exec('ALTER TABLE classes ADD COLUMN development_levy REAL DEFAULT 0');
+  if (!classCols.includes('school_fees') || !classCols.includes('development_levy')) {
+    db.exec(`UPDATE classes SET school_fees = CASE year_level WHEN 1 THEN 350 WHEN 2 THEN 380 WHEN 3 THEN 420 WHEN 4 THEN 450 ELSE school_fees END`);
+    db.exec(`UPDATE classes SET development_levy = CASE year_level WHEN 1 THEN 100 WHEN 2 THEN 100 WHEN 3 THEN 120 WHEN 4 THEN 120 ELSE development_levy END`);
+  }
 
   const accounts = [
     ['1000', 'Cash', 'asset', null, 1],
