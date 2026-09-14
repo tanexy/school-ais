@@ -223,9 +223,12 @@ select:not(.search) { max-width: 100%; }
 .small { font-size: 12px; }
 .mt { margin-top: 16px; }
 .mb { margin-bottom: 16px; }
+.mv { margin: 16px 0; }
 .flex { display: flex; align-items: center; gap: 8px; }
 .wrap { flex-wrap: wrap; }
 .right { margin-left: auto; }
+.field-inline { display: flex; align-items: center; gap: 8px; }
+.field-inline > span { color: var(--muted); font-size: 12px; white-space: nowrap; }
 
 .empty { text-align: center; color: var(--muted); padding: 48px 0; }
 .empty .big { font-size: 40px; margin-bottom: 10px; }

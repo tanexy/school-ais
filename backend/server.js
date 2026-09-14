@@ -55,6 +55,14 @@ function postEntry(accountCode, description, debit, credit, date, refType, refId
   `).run(accountCode, description, debit || 0, credit || 0, date || new Date().toISOString().slice(0, 10), refType, refId);
 }
 
+function computeGrade(score) {
+  if (score >= 75) return 'A';
+  if (score >= 60) return 'B';
+  if (score >= 50) return 'C';
+  if (score >= 40) return 'D';
+  return 'F';
+}
+
 // ─────────────────────────────────────────────
 // EXPRESS APP
 // ─────────────────────────────────────────────
@@ -119,6 +127,81 @@ app.put('/api/classes/:id', authRequired, rolesAllowed('admin'), (req, res) => {
   `).run(name, stream ?? '', capacity || 0, year_level, school_fees || 0, development_levy || 0, req.params.id);
   if (r.changes === 0) return res.status(404).json({ message: 'Class not found' });
   res.json({ message: 'Class updated' });
+});
+
+// ── Attendance ─────────────────────────────────
+app.get('/api/attendance', authRequired, rolesAllowed('admin', 'bursar', 'headmaster', 'teacher'), (req, res) => {
+  const cid = Number(req.query.class_id);
+  if (!cid) return res.status(400).json({ message: 'class_id is required' });
+  const d = req.query.date || new Date().toISOString().slice(0, 10);
+  const records = db.prepare(`
+    SELECT s.id AS student_id, s.student_id AS student_code, s.first_name || ' ' || s.last_name AS student_name,
+           a.status, a.remarks
+    FROM students s
+    LEFT JOIN attendance a ON a.student_id = s.id AND a.class_id = ? AND a.date = ?
+    WHERE s.class_id = ? AND s.status = 'active'
+    ORDER BY s.last_name, s.first_name
+  `).all(cid, d, cid);
+  const count = (st) => records.filter((r) => r.status === st).length;
+  res.json({ date: d, records, present: count('present'), absent: count('absent'), late: count('late'), excused: count('excused') });
+});
+
+app.post('/api/attendance/bulk', authRequired, rolesAllowed('admin', 'bursar', 'headmaster', 'teacher'), (req, res) => {
+  const { class_id, date, records, entered_by } = req.body;
+  if (!class_id || !date || !Array.isArray(records)) {
+    return res.status(400).json({ message: 'class_id, date and records are required' });
+  }
+  const upsert = db.prepare(`
+    INSERT INTO attendance (class_id, student_id, date, status, remarks, entered_by)
+    VALUES (?, ?, ?, ?, ?, ?)
+    ON CONFLICT(class_id, student_id, date) DO UPDATE SET status = excluded.status, remarks = excluded.remarks
+  `);
+  const txn = db.transaction(() => {
+    for (const r of records) {
+      const status = ['present', 'absent', 'late', 'excused'].includes(r.status) ? r.status : 'present';
+      upsert.run(class_id, r.student_id, date, status, r.remarks || '', entered_by || null);
+    }
+  });
+  txn();
+  res.json({ message: `Attendance saved for ${records.length} students on ${date}` });
+});
+
+// ── Grades ─────────────────────────────────────
+app.get('/api/grades', authRequired, rolesAllowed('admin', 'bursar', 'headmaster', 'teacher'), (req, res) => {
+  const cid = Number(req.query.class_id);
+  if (!cid) return res.status(400).json({ message: 'class_id is required' });
+  const term = req.query.term || '';
+  const subject = req.query.subject || '';
+  const records = db.prepare(`
+    SELECT s.id AS student_id, s.student_id AS student_code, s.first_name || ' ' || s.last_name AS student_name,
+           g.id AS grade_id, g.score, g.grade AS letter_grade, g.remarks
+    FROM students s
+    LEFT JOIN grades g ON g.student_id = s.id AND g.class_id = ? AND g.term = ? AND g.subject = ?
+    WHERE s.class_id = ? AND s.status = 'active'
+    ORDER BY s.last_name, s.first_name
+  `).all(cid, term, subject, cid);
+  res.json({ term, subject, records });
+});
+
+app.post('/api/grades/bulk', authRequired, rolesAllowed('admin', 'bursar', 'headmaster', 'teacher'), (req, res) => {
+  const { class_id, term, subject, records, entered_by } = req.body;
+  if (!class_id || !term || !subject || !Array.isArray(records)) {
+    return res.status(400).json({ message: 'class_id, term, subject and records are required' });
+  }
+  const upsert = db.prepare(`
+    INSERT INTO grades (class_id, student_id, subject, term, score, grade, remarks, entered_by)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(class_id, student_id, subject, term) DO UPDATE SET score = excluded.score, grade = excluded.grade, remarks = excluded.remarks
+  `);
+  const txn = db.transaction(() => {
+    for (const r of records) {
+      const score = Number(r.score);
+      if (r.student_id == null || Number.isNaN(score)) continue;
+      upsert.run(class_id, r.student_id, subject, term, score, computeGrade(score), r.remarks || '', entered_by || null);
+    }
+  });
+  txn();
+  res.json({ message: `Grades saved for ${subject} (${term})` });
 });
 
 // ── Students ──────────────────────────────────
@@ -632,7 +715,7 @@ app.get('/api/reports/students-by-class', authRequired, rolesAllowed('admin', 'b
 });
 
 // Outstanding fees / debtors
-app.get('/api/reports/outstanding-fees', authRequired, rolesAllowed('admin', 'bursar', 'headmaster'), (req, res) => {
+app.get('/api/reports/outstanding-fees', authRequired, rolesAllowed('admin', 'bursar', 'headmaster', 'teacher'), (req, res) => {
   const rows = db.prepare(`
     SELECT s.id AS student_id, s.student_id AS code, s.first_name || ' ' || s.last_name AS student_name,
            TRIM(c.name || ' ' || COALESCE(c.stream,'')) AS class_name,
@@ -676,7 +759,7 @@ app.get('/api/reports/student-statement/:id', authRequired, rolesAllowed('admin'
 });
 
 // Collections report
-app.get('/api/reports/collections', authRequired, rolesAllowed('admin', 'bursar', 'headmaster'), (req, res) => {
+app.get('/api/reports/collections', authRequired, rolesAllowed('admin', 'bursar', 'headmaster', 'teacher'), (req, res) => {
   const daily = db.prepare(`
     SELECT date, COUNT(*) AS count, COALESCE(SUM(amount),0) AS total
     FROM payments GROUP BY date ORDER BY date DESC
@@ -697,7 +780,7 @@ app.get('/api/reports/collections', authRequired, rolesAllowed('admin', 'bursar'
 });
 
 // Expenses by category
-app.get('/api/reports/expenses-by-category', authRequired, rolesAllowed('admin', 'bursar', 'headmaster'), (req, res) => {
+app.get('/api/reports/expenses-by-category', authRequired, rolesAllowed('admin', 'bursar', 'headmaster', 'teacher'), (req, res) => {
   const rows = db.prepare(`
     SELECT e.category, COUNT(*) AS count, COALESCE(SUM(amount),0) AS total
     FROM expenses e GROUP BY e.category ORDER BY total DESC

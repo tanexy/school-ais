@@ -31,6 +31,19 @@ export function Dashboard() {
         <StatCard label="Cash / Bank Balance" value={money(d.cash_bank_balance)} tone={d.cash_bank_balance >= 0 ? 'pos' : 'neg'} sub="From cashbook" />
       </div>
 
+      <div className="card mb">
+        <div className="flex" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+          <div>
+            <h2 className="section" style={{ marginBottom: 2 }}>Teaching tools</h2>
+            <div className="muted small">Mark attendance and enter term results</div>
+          </div>
+          <div className="flex">
+            <Link to="/attendance" className="btn primary">☑ Attendance register</Link>
+            <Link to="/grades" className="btn">↯ Enter grades</Link>
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-2 mb">
         <div className="card">
           <h2 className="section">Cash collections (recent)</h2>

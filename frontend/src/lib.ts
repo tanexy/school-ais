@@ -40,3 +40,12 @@ export function statusLabel(status?: string): string {
 export function intl(n: number): string {
   return n.toLocaleString('en-US')
 }
+
+export function letterForScore(score: number | null | undefined): string {
+  if (score == null || Number.isNaN(score)) return '—'
+  if (score >= 75) return 'A'
+  if (score >= 60) return 'B'
+  if (score >= 50) return 'C'
+  if (score >= 40) return 'D'
+  return 'F'
+}

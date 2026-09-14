@@ -177,9 +177,39 @@ function migrate() {
       reference_id INTEGER
     );
 
+    CREATE TABLE IF NOT EXISTS attendance (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      class_id INTEGER NOT NULL,
+      student_id INTEGER NOT NULL,
+      date TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'present',
+      remarks TEXT,
+      entered_by INTEGER,
+      UNIQUE(class_id, student_id, date),
+      FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE,
+      FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS grades (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      class_id INTEGER NOT NULL,
+      student_id INTEGER NOT NULL,
+      subject TEXT NOT NULL,
+      term TEXT NOT NULL,
+      score REAL,
+      grade TEXT,
+      remarks TEXT,
+      entered_by INTEGER,
+      UNIQUE(class_id, student_id, subject, term),
+      FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE,
+      FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
+    );
+
     CREATE INDEX IF NOT EXISTS idx_fees_student ON fees(student_id);
     CREATE INDEX IF NOT EXISTS idx_payments_student ON payments(student_id);
     CREATE INDEX IF NOT EXISTS idx_ledger_account ON ledger_entries(account_code);
+    CREATE INDEX IF NOT EXISTS idx_attendance_class_date ON attendance(class_id, date);
+    CREATE INDEX IF NOT EXISTS idx_grades_class_term ON grades(class_id, term);
   `);
 
   const cats = ['utilities', 'salaries', 'stationery', 'repairs', 'transport', 'security', 'cleaning', 'teaching_materials'];

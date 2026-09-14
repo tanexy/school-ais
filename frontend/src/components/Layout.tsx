@@ -14,6 +14,13 @@ const NAV: { section: string; items: { to: string; label: string; ico: string; r
     ],
   },
   {
+    section: 'Teaching',
+    items: [
+      { to: '/attendance', label: 'Attendance', ico: '☑', roles: ['admin', 'bursar', 'teacher', 'headmaster'] },
+      { to: '/grades', label: 'Grade Entry', ico: '↯', roles: ['admin', 'bursar', 'teacher', 'headmaster'] },
+    ],
+  },
+  {
     section: 'Finance',
     items: [
       { to: '/payments', label: 'Payments', ico: '₩', roles: ['admin', 'bursar', 'headmaster'] },

@@ -179,3 +179,36 @@ export interface DashboardData {
   cash_bank_balance: number
   low_stock_items: number
 }
+
+export interface AttendanceRecord {
+  student_id: number
+  student_code: string
+  student_name: string
+  status: 'present' | 'absent' | 'late' | 'excused' | null
+  remarks: string | null
+}
+
+export interface AttendanceRoster {
+  date: string
+  records: AttendanceRecord[]
+  present: number
+  absent: number
+  late: number
+  excused: number
+}
+
+export interface GradeRecord {
+  student_id: number
+  student_code: string
+  student_name: string
+  grade_id: number | null
+  score: number | null
+  letter_grade: string | null
+  remarks: string | null
+}
+
+export interface GradeRoster {
+  term: string
+  subject: string
+  records: GradeRecord[]
+}

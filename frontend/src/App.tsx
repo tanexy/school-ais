@@ -16,6 +16,8 @@ import { Payroll } from './pages/Payroll'
 import { Inventory } from './pages/Inventory'
 import { Accounting } from './pages/Accounting'
 import { Reports } from './pages/Reports'
+import { Attendance } from './pages/Attendance'
+import { Grades } from './pages/Grades'
 
 export default function App() {
   return (
@@ -30,6 +32,9 @@ export default function App() {
             <Route path="students/:id" element={<StudentDetail />} />
 
             <Route path="classes" element={<RequireRole roles={['admin', 'bursar']}><Classes /></RequireRole>} />
+
+            <Route path="attendance" element={<RequireRole roles={['admin', 'bursar', 'teacher', 'headmaster']}><Attendance /></RequireRole>} />
+            <Route path="grades" element={<RequireRole roles={['admin', 'bursar', 'teacher', 'headmaster']}><Grades /></RequireRole>} />
 
             <Route path="payments" element={<RequireRole roles={['admin', 'bursar', 'headmaster']}><Payments /></RequireRole>} />
             <Route path="fees" element={<RequireRole roles={['admin', 'bursar', 'headmaster']}><Fees /></RequireRole>} />

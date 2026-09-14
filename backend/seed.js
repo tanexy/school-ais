@@ -5,7 +5,7 @@ migrate();
 db.pragma('foreign_keys = OFF');
 
 // Reset existing data (keep schema)
-const tables = ['ledger_entries','users','classes','students','fees','payments','expenses','suppliers','purchases','employees','payroll','inventory_items','stock_movements','assets','chart_of_accounts'];
+const tables = ['ledger_entries','users','classes','students','fees','payments','expenses','suppliers','purchases','employees','payroll','inventory_items','stock_movements','assets','chart_of_accounts','attendance','grades'];
 db.exec(`DELETE FROM ledger_entries; DELETE FROM sqlite_sequence;`);
 tables.forEach(t => { try { db.exec(`DELETE FROM ${t}`); } catch (e) {} });
 db.exec(`DELETE FROM sqlite_sequence WHERE 1`);
@@ -224,6 +224,37 @@ const assets = [
 ];
 assets.forEach(a => insAsset.run(...a));
 console.log('  ✓ 6 assets');
+
+// ── Attendance ──────────────────────────────────
+const insAtt = db.prepare('INSERT INTO attendance (class_id, student_id, date, status, remarks) VALUES (?, ?, ?, ?, ?)');
+const attDays = [1, 2, 3, 4, 5];
+db.transaction(() => {
+  for (const s of students) {
+    for (const n of attDays) {
+      const status = s.id % 9 === 0 ? 'absent' : (s.id % 4 === 0 ? 'late' : 'present');
+      const remarks = status === 'absent' ? 'No reason given' : status === 'late' ? 'Arrived after 08:00' : null;
+      insAtt.run(s.classId, s.id, daysAgo(n), status, remarks);
+    }
+  }
+})();
+console.log('  ✓ 150 attendance records (5 days × 30 students)');
+
+// ── Grades ──────────────────────────────────────
+const insGrade = db.prepare("INSERT INTO grades (class_id, student_id, subject, term, score, grade, remarks) VALUES (?, ?, ?, ?, ?, ?, ?)");
+const subjects = ['Mathematics', 'English', 'Science', 'History'];
+const gradeTerms = ['Term 1 2025', 'Term 2 2025'];
+db.transaction(() => {
+  for (const s of students) {
+    for (const subjIdx of [0, 1, 2, 3]) {
+      for (const termIdx of [0, 1]) {
+        const score = ((s.id * 7) + (subjIdx * 13) + (termIdx * 5)) % 46 + 35;
+        const grade = score >= 75 ? 'A' : score >= 60 ? 'B' : score >= 50 ? 'C' : score >= 40 ? 'D' : 'F';
+        insGrade.run(s.classId, s.id, subjects[subjIdx], gradeTerms[termIdx], score, grade, null);
+      }
+    }
+  }
+})();
+console.log('  ✓ 240 grade records (4 subjects × 2 terms × 30 students)');
 
 // ── Ledger Entries ─────────────────────────────
 // Post fee income entries
